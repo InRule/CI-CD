@@ -211,7 +211,6 @@ namespace InRule.DevOps.Helpers
                 }
                 else
                 {
-
                     var jarStream = await result.Content.ReadAsStreamAsync();
                     var saveToFileName = result.Content.Headers.ContentDisposition.FileName;
                     var filePath = Path.Combine(DestinationPath, saveToFileName);
@@ -237,77 +236,66 @@ namespace InRule.DevOps.Helpers
                                 Enum.TryParse(configType, out channelType);
                         }
 
-                        if (channelType == UploadChannel.GitHub)
+                        string downloadLink = null;
+                        string displaySource = null;
+                        try
                         {
-                            try
+                            switch (channelType)
                             {
-                                var downloadGitHubLink = await GitHubHelper.UploadFileToRepo(jarStream, fileName, uploadChannel);
+                                case UploadChannel.GitHub:
+                                    downloadLink = await GitHubHelper.Instance.UploadFileToRepo(jarStream, fileName, uploadChannel);
+                                    displaySource = "GitHub";
+                                    break;
 
-                                if (htmlResults)
-                                    htmlContent += $"<br>" + $"Java jar has been generated for {ruleAppDef.Name}. <a href=\"{downloadGitHubLink}\">Click here to download the Java jar file {fileName} from GitHub</a><br></body></html>";
+                                case UploadChannel.AzureGit:
+                                    downloadLink = await AzureGitHelper.Instance.UploadFileToRepo(jarStream, fileName, uploadChannel);
+                                    displaySource = "Azure Git";
+                                    break;
 
-                                foreach (var channel in channels)
-                                {
-
-                                    switch (SettingsManager.GetHandlerType(channel))
+                                case UploadChannel.Box:
+                                    using (var fileStream = new FileStream(filePath, FileMode.Create))
                                     {
-                                        case IHelper.InRuleEventHelperType.Teams:
-                                            TeamsHelper.PostMessageWithDownloadButton($"Java jar has been generated for {ruleAppDef.Name}. Click here to download the Java jar file from GitHub",
-                                                ruleAppDef.Name + ".jar", downloadGitHubLink, Prefix, channel);
-                                            break;
-                                        case IHelper.InRuleEventHelperType.Slack:
-                                            SlackHelper.PostMessageWithDownloadButton($"Java jar has been generated for {ruleAppDef.Name}. Click here to download the Java jar file from GitHub",
-                                                ruleAppDef.Name + ".jar", downloadGitHubLink, Prefix, channel);
-                                            break;
+                                        await jarStream.CopyToAsync(fileStream);
                                     }
-                                }
-                            }
-                            catch (Exception ex)
-                            {
-                                await NotificationHelper.NotifyAsync($"Error uploading Java JAR file to GitHub: {ex.Message}", Prefix, "Debug");
+                                    downloadLink = await BoxComHelper.UploadFile(fileName, filePath, uploadChannel);
+                                    displaySource = "Box.com";
+                                    break;
                             }
                         }
-
-                        if (channelType == UploadChannel.Box)
+                        catch (Exception ex)
                         {
+                            await NotificationHelper.NotifyAsync($"Error uploading Java JAR file to {channelType}: {ex.Message}", Prefix, "Debug");
+                        }
+
+                        if (downloadLink != null && displaySource != null)
+                        {
+                            if (htmlResults)
+                                htmlContent += $"<br>" + $"Java jar has been generated for {ruleAppDef.Name}. <a href=\"{downloadLink}\">Click here to download the Java jar file {fileName} from {displaySource}</a><br></body></html>";
+
                             try
                             {
-                                using (var fileStream = new FileStream(filePath, FileMode.Create))
-                                {
-                                    await jarStream.CopyToAsync(fileStream);
-                                }
-
-                                var downloadLink = await BoxComHelper.UploadFile(fileName, filePath, uploadChannel);
-
-                                if (htmlResults)
-                                    htmlContent += $"<br>" + $"Java jar has been generated for {ruleAppDef.Name}. <a href=\"{downloadLink}\">Click here to download the Java jar file {fileName} from Box.com</a><br></body></html>";
-
                                 foreach (var channel in channels)
                                 {
-
                                     switch (SettingsManager.GetHandlerType(channel))
                                     {
                                         case IHelper.InRuleEventHelperType.Teams:
-                                            TeamsHelper.PostMessageWithDownloadButton($"Java jar has been generated for {ruleAppDef.Name}. Click here to download the Java jar file from Box.com",
-                                                ruleAppDef.Name + ".jar", downloadLink, Prefix, channel);
+                                            TeamsHelper.PostMessageWithDownloadButton($"Java jar has been generated for {ruleAppDef.Name}. Click here to download the Java jar file from {displaySource}", ruleAppDef.Name + ".jar", downloadLink, Prefix, channel);
                                             break;
                                         case IHelper.InRuleEventHelperType.Slack:
-                                            SlackHelper.PostMessageWithDownloadButton($"Java jar has been generated for {ruleAppDef.Name}. Click here to download the Java jar file from Box.com",
-                                                ruleAppDef.Name + ".jar", downloadLink, Prefix, channel);
+                                            SlackHelper.PostMessageWithDownloadButton($"Java jar has been generated for {ruleAppDef.Name}. Click here to download the Java jar file from {displaySource}", ruleAppDef.Name + ".jar", downloadLink, Prefix, channel);
                                             break;
                                     }
                                 }
                             }
                             catch (Exception ex)
                             {
-                                await NotificationHelper.NotifyAsync($"Error uploading Java JAR file to GitHub: {ex.Message}", Prefix, "Debug");
+                                await NotificationHelper.NotifyAsync($"Error notifying channels about uploaded file: {ex.Message}", Prefix, "Debug");
                             }
                         }
                     }
 
                     foreach (var channel in channels)
                     {
-
                         switch (SettingsManager.GetHandlerType(channel))
                         {
                             case IHelper.InRuleEventHelperType.Email:

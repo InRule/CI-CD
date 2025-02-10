@@ -44,7 +44,8 @@ namespace InRule.DevOps
             string reportContent = localEncoding.GetString(mem.ToArray());
             mem.Dispose();
 
-            var downloadGitHubLink = GitHubHelper.UploadFileToRepo(reportContent, fileName + ".htm").Result;
+            // TODO: Does this need to support uploading to Azure Git?
+            var downloadGitHubLink = GitHubHelper.Instance.UploadFileToRepo(reportContent, fileName + ".htm").Result;
             //SlackHelper.PostMessageWithDownloadButton("Click here to download rule application report from GitHub", fileName, downloadGitHubLink, "RULEAPP REPORT - ");
 
             return downloadGitHubLink;
@@ -91,7 +92,8 @@ namespace InRule.DevOps
             string reportContent = localEncoding.GetString(mem.ToArray());
             mem.Dispose();
 
-            var downloadGitHubLink = GitHubHelper.UploadFileToRepo(reportContent, fileName + ".htm").Result;
+            // TODO: Does this need to support uploading to Azure Git?
+            var downloadGitHubLink = GitHubHelper.Instance.UploadFileToRepo(reportContent, fileName + ".htm").Result;
 
             return downloadGitHubLink;
         }

@@ -1,4 +1,5 @@
-﻿using Newtonsoft.Json;
+﻿using InRule.DevOps.Helpers.Models;
+using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System;
 using System.IO;
@@ -10,17 +11,30 @@ using System.Threading.Tasks;
 
 namespace InRule.DevOps.Helpers
 {
-    public static class GitHubHelper
+    public class GitHubHelper : IFileRepository
     {
-        private static readonly string moniker = "GitHub";
-        private static readonly bool IsCloudBased = bool.Parse(SettingsManager.Get("IsCloudBased"));
-        public static string Prefix = "GITHUB REPOSITORY";
+        private static GitHubHelper instance = null;
+        public static IFileRepository Instance
+        {
+            get
+            {
+                if (instance == null)
+                {
+                    instance = new GitHubHelper();
+                }
+                return instance;
+            }
+        }
 
-        public static async Task DownloadFilesFromRepo(string fileExtension)
+        public const string Prefix = "GITHUB REPOSITORY";
+        private const string moniker = "GitHub";
+        private bool IsCloudBased = bool.Parse(SettingsManager.Get("IsCloudBased"));
+
+        public async Task DownloadFilesFromRepo(string fileExtension)
         {
             await DownloadFilesFromRepo(fileExtension, moniker);
         }
-        public static async Task DownloadFilesFromRepo(string fileExtension, string moniker)
+        public async Task DownloadFilesFromRepo(string fileExtension, string moniker)
         {
             string GitHubRepo = SettingsManager.Get($"{moniker}.GitHubRepo");
             string GitHubFolder = SettingsManager.Get($"{moniker}.GitHubFolder");
@@ -91,11 +105,11 @@ namespace InRule.DevOps.Helpers
             }
         }
 
-        public static async Task<string> UploadFileToRepo(string fileContent, string fileName)
+        public async Task<string> UploadFileToRepo(string fileContent, string fileName)
         {
             return await (Task.FromResult(UploadFileToRepo(fileContent, fileName, moniker).Result));
         }
-        public static async Task<string> UploadFileToRepo(string fileContent, string fileName, string moniker)
+        public async Task<string> UploadFileToRepo(string fileContent, string fileName, string moniker)
         {
             string GitHubRepo = SettingsManager.Get($"{moniker}.GitHubRepo");
             string GitHubFolder = SettingsManager.Get($"{moniker}.GitHubFolder");
@@ -144,7 +158,7 @@ namespace InRule.DevOps.Helpers
             return string.Empty;
         }
 
-        public static async Task<string> GetExistingFileSHA(string fileName, string moniker)
+        private async Task<string> GetExistingFileSHA(string fileName, string moniker)
         {
             string GitHubRepo = SettingsManager.Get($"{moniker}.GitHubRepo");
             string GitHubFolder = SettingsManager.Get($"{moniker}.GitHubFolder");
@@ -186,12 +200,12 @@ namespace InRule.DevOps.Helpers
             return string.Empty;
         }
 
-        public static async Task<string> UploadFileToRepo(Stream fileContentStream, string fileName)
+        public async Task<string> UploadFileToRepo(Stream fileContentStream, string fileName)
         {
             return await (Task.FromResult(UploadFileToRepo(fileContentStream, fileName, moniker).Result));
         }
 
-        public static async Task<string> UploadFileToRepo(Stream fileContentStream, string fileName, string moniker)
+        public async Task<string> UploadFileToRepo(Stream fileContentStream, string fileName, string moniker)
         {
             string GitHubRepo = SettingsManager.Get($"{moniker}.GitHubRepo");
             string GitHubFolder = SettingsManager.Get($"{moniker}.GitHubFolder");

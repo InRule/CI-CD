@@ -17,6 +17,7 @@ namespace InRule.DevOps.Helpers
         public enum UploadChannel
         {
             GitHub,
+            AzureGit,
             Box
         }
         public enum InRuleEventHelperType
@@ -39,7 +40,9 @@ namespace InRule.DevOps.Helpers
             BariumLiveCreateInstance,
             Webhook,
             SqlRuleSetMapper,
-            RuleSetDbMapper
+            RuleSetDbMapper,
+            SaveToRepo,
+            Promote
         }
 
         [Obsolete]
@@ -69,6 +72,9 @@ namespace InRule.DevOps.Helpers
 
                 RuleApplicationDef ruleAppDef = null;
 
+                // This was an attempt to make running locally more efficient.  However, ruleAppXml is not escaped and may throw an exception
+                // when getting loaded (IE it includes <%text%> from Notifications un-escaped)
+                /*
                 if (!string.IsNullOrEmpty(ruleAppXml))
                 {
                     ruleAppDef = RuleApplicationDef.LoadXml(ruleAppXml);
@@ -77,7 +83,9 @@ namespace InRule.DevOps.Helpers
                 {
                     ruleAppDef = GetRuleAppDef(eventData.RepositoryUri.ToString(), eventData.GUID.ToString(), eventData.RuleAppRevision, eventData.OperationName);
                     ruleAppXml = ruleAppDef.GetXml();
-                }
+                }*/
+                ruleAppDef = GetRuleAppDef(eventData.RepositoryUri.ToString(), eventData.GUID.ToString(), eventData.RuleAppRevision, eventData.OperationName);
+                ruleAppXml = ruleAppDef.GetXml();
 
 
                 foreach (var handler in handlers)
@@ -94,106 +102,96 @@ namespace InRule.DevOps.Helpers
                         }
 
                         await NotificationHelper.NotifyAsync($"BEGIN PROCESSING {eventData.OperationName} -> {handler} ({handlerType})", string.Empty, "Debug");
-                        if (handlerType == InRuleEventHelperType.Slack)
-                        {
-                            await SlackHelper.SendEventToSlackAsync(eventData.OperationName, eventData, "CATALOG EVENT", handler);
-                        }
-                        else if (handlerType == InRuleEventHelperType.Teams)
-                        {
-                            await TeamsHelper.SendEventToTeamsAsync(eventData.OperationName, eventData, "CATALOG EVENT", handler);
-                        }
-                        else if (handler == "Email")
-                        {
-                            await SendGridHelper.SendEventToEmailAsync(eventData.OperationName, eventData, " - InRule Catalog Event", string.Empty);
-                        }
-                        else if (handlerType == InRuleEventHelperType.TestSuite)
-                        {
-                            if (ruleAppDef != null)
-                            {
-                                TestSuiteRunnerHelper.RunRegressionTestsAsync(eventData.OperationName, eventData, ruleAppDef, handler);
-                            }
-                        }
-                        else if (handlerType == InRuleEventHelperType.ServiceBus)
-                        {
-                            var eventDataJson = JsonConvert.SerializeObject(eventData);
-                            AzureServiceBusHelper.SendMessageAsync(eventDataJson, handler);
-                        }
-                        else if (handlerType == InRuleEventHelperType.EventGrid)
-                        {
-                            EventGridHelper.PublishEventAsync(eventData.OperationName, eventData, handler);
-                        }
-                        else if (handlerType == InRuleEventHelperType.Java)
-                        {
-                            if (ruleAppDef != null)
-                            {
-                                await JavaDistributionHelper.GenerateJavaJar(ruleAppDef, true, handler);
-                            }
-                        }
-                        else if (handlerType == InRuleEventHelperType.JavaScript)
-                        {
-                            if (ruleAppDef != null)
-                            {
-                                await JavaScriptDistributionHelper.CallDistributionServiceAsync(ruleAppDef, true, false, true, handler);
-                            }
-                        }
-                        else if (handlerType == InRuleEventHelperType.AppInsights)
-                        {
-                            AzureAppInsightsHelper.PublishEventToAppInsights(eventData.OperationName, eventData, handler);
-                        }
-                        else if (handlerType == InRuleEventHelperType.Sql)
-                        {
-                            SqlDatabaseHelper.WriteEvent(eventData.OperationName, eventData, handler);
-                        }
-                        else if (handlerType == InRuleEventHelperType.RuleAppReport)
-                        {
-                            if (ruleAppDef != null)
-                            {
-                                await InRuleReportingHelper.GetRuleAppReportAsync(eventData.OperationName, eventData, ruleAppDef);
-                            }
-                        }
-                        else if (handlerType == InRuleEventHelperType.RuleAppDiffReport)
-                        {
-                            if (ruleAppDef == null) continue;
-                            if (ruleAppDef.Revision > 1)
-                            {
-                                var fromRuleAppDef = GetRuleAppDef(eventData.RepositoryUri.ToString(), ruleAppDef.Guid.ToString(), ruleAppDef.Revision - 1, string.Empty);
-                                if (fromRuleAppDef != null)
-                                    await InRuleReportingHelper.GetRuleAppDiffReportAsync(eventData.OperationName, eventData, fromRuleAppDef, ruleAppDef);
-                            }
-                        }
-                        else if (handlerType == InRuleEventHelperType.DevOps)
-                        {
-                            AzureDevOpsApiHelper.QueuePipelineBuild(handler, ruleAppDef, eventData);
-                        }
-                        else if (handlerType == InRuleEventHelperType.EventLog)
-                        {
-                            EventLog.WriteEntry("InRule", JsonConvert.SerializeObject(eventData, Newtonsoft.Json.Formatting.Indented), EventLogEntryType.Information);
-                        }
-                        else if (handlerType == InRuleEventHelperType.ApprovalFlow)
-                        {
-                            if (eventData.RequiresApproval)
-                            {
-                                eventData.ApprovalFlowMoniker = handler;
-                                eventData = (dynamic)eventDataSource;
-                                ruleAppDef = !string.IsNullOrEmpty(ruleAppXml) ? RuleApplicationDef.LoadXml(ruleAppXml) : (RuleApplicationDef) GetRuleAppDef(eventData.RepositoryUri.ToString(), eventData.GUID.ToString(), eventData.RuleAppRevision, eventData.OperationName);
-                                await CheckInApprovalHelper.SendApproveRequestAsync(eventDataSource, ruleAppDef, handler);
-                            }
-                        }
-                        else if (handlerType == InRuleEventHelperType.BariumLiveCreateInstance)
-                        {
-                             await BariumLiveHelper.BariumLiveCreateInstance();
-                        }
-                        else if (handlerType == InRuleEventHelperType.Webhook)
-                        {
-                             await WebhookHelper.PostToWebhook(ruleAppXml);
-                        }
-                        else if (handlerType == InRuleEventHelperType.SqlRuleSetMapper)
-                        {
-                             SqlMapperHelper.MapToDatabase(eventData, ruleAppDef);
-                        }
-                        else if (handlerType == InRuleEventHelperType.RuleSetDbMapper)
-                        {
-                             RuleSetDbMapper.RunRuleSetDbMapper(ruleAppDef, eventData);
+
+                        switch (handlerType) {
+                            case InRuleEventHelperType.Slack:
+                                await SlackHelper.SendEventToSlackAsync(eventData.OperationName, eventData, "CATALOG EVENT", handler);
+                                break;
+                            case InRuleEventHelperType.Teams:
+                                await TeamsHelper.SendEventToTeamsAsync(eventData.OperationName, eventData, "CATALOG EVENT", handler);
+                                break;
+                            case InRuleEventHelperType.Email:
+                                await SendGridHelper.SendEventToEmailAsync(eventData.OperationName, eventData, " - InRule Catalog Event", string.Empty);
+                                break;
+                            case InRuleEventHelperType.TestSuite:
+                                if (ruleAppDef != null)
+                                {
+                                    TestSuiteRunnerHelper.RunRegressionTestsAsync(eventData.OperationName, eventData, ruleAppDef, handler);
+                                }
+                                break;
+                            case InRuleEventHelperType.ServiceBus:
+                                var eventDataJson = JsonConvert.SerializeObject(eventData);
+                                AzureServiceBusHelper.SendMessageAsync(eventDataJson, handler);
+                                break;
+                            case InRuleEventHelperType.EventGrid:
+                                EventGridHelper.PublishEventAsync(eventData.OperationName, eventData, handler);
+                                break;
+                            case InRuleEventHelperType.Java:
+                                if (ruleAppDef != null)
+                                {
+                                    await JavaDistributionHelper.GenerateJavaJar(ruleAppDef, true, handler);
+                                }
+                                break;
+                            case InRuleEventHelperType.JavaScript:
+                                if (ruleAppDef != null)
+                                {
+                                    await JavaScriptDistributionHelper.CallDistributionServiceAsync(ruleAppDef, true, false, true, handler);
+                                }
+                                break;
+                            case InRuleEventHelperType.AppInsights:
+                                AzureAppInsightsHelper.PublishEventToAppInsights(eventData.OperationName, eventData, handler);
+                                break;
+                            case InRuleEventHelperType.Sql:
+                                SqlDatabaseHelper.WriteEvent(eventData.OperationName, eventData, handler);
+                                break;
+                            case InRuleEventHelperType.RuleAppReport:
+                                if (ruleAppDef != null)
+                                {
+                                    await InRuleReportingHelper.GetRuleAppReportAsync(eventData.OperationName, eventData, ruleAppDef);
+                                }
+                                break;
+                            case InRuleEventHelperType.RuleAppDiffReport:
+                                if (ruleAppDef == null) continue;
+                                if (ruleAppDef.Revision > 1)
+                                {
+                                    var fromRuleAppDef = GetRuleAppDef(eventData.RepositoryUri.ToString(), ruleAppDef.Guid.ToString(), ruleAppDef.Revision - 1, string.Empty);
+                                    if (fromRuleAppDef != null)
+                                        await InRuleReportingHelper.GetRuleAppDiffReportAsync(eventData.OperationName, eventData, fromRuleAppDef, ruleAppDef);
+                                }
+                                break;
+                            case InRuleEventHelperType.DevOps:
+                                AzureDevOpsApiHelper.QueuePipelineBuild(handler, ruleAppDef, eventData);
+                                break;
+                            case InRuleEventHelperType.EventLog:
+                                EventLog.WriteEntry("InRule", JsonConvert.SerializeObject(eventData, Newtonsoft.Json.Formatting.Indented), EventLogEntryType.Information);
+                                break;
+                            case InRuleEventHelperType.ApprovalFlow:
+                                if (eventData.RequiresApproval)
+                                {
+                                    eventData.ApprovalFlowMoniker = handler;
+                                    eventData = (dynamic)eventDataSource;
+                                    ruleAppDef = !string.IsNullOrEmpty(ruleAppXml) ? RuleApplicationDef.LoadXml(ruleAppXml) : (RuleApplicationDef)GetRuleAppDef(eventData.RepositoryUri.ToString(), eventData.GUID.ToString(), eventData.RuleAppRevision, eventData.OperationName);
+                                    await CheckInApprovalHelper.SendApproveRequestAsync(eventDataSource, ruleAppDef, handler);
+                                }
+                                break;
+                            case InRuleEventHelperType.BariumLiveCreateInstance:
+                                await BariumLiveHelper.BariumLiveCreateInstance();
+                                break;
+                            case InRuleEventHelperType.Webhook:
+                                await WebhookHelper.PostToWebhook(ruleAppXml);
+                                break;
+                            case InRuleEventHelperType.SqlRuleSetMapper:
+                                SqlMapperHelper.MapToDatabase(eventData, ruleAppDef);
+                                break;
+                            case InRuleEventHelperType.RuleSetDbMapper:
+                                RuleSetDbMapper.RunRuleSetDbMapper(ruleAppDef, eventData);
+                                break;
+                            case InRuleEventHelperType.SaveToRepo:
+                                await UploadToRepoHelper.UploadToRepo(ruleAppDef, handler);
+                                break;
+                            case InRuleEventHelperType.Promote:
+                                await PromotionHelper.Promote(ruleAppDef, handler);
+                                break;
                         }
                     }
                     catch (Exception ex)

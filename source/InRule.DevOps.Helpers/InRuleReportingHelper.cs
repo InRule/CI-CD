@@ -55,12 +55,23 @@ namespace InRule.DevOps.Helpers
                                     case IHelper.InRuleEventHelperType.GitHub:
                                         try
                                         {
-                                            var downloadGitHubLink = await GitHubHelper.UploadFileToRepo(reportContent, fileName, uploadChannel);
-                                            TeamsHelper.PostMessageWithDownloadButton("Click here to download rule application report from GitHub", fileName, downloadGitHubLink, "RULEAPP REPORT - ", channel);
+                                            var downloadLink = await GitHubHelper.Instance.UploadFileToRepo(reportContent, fileName, uploadChannel);
+                                            TeamsHelper.PostMessageWithDownloadButton("Click here to download rule application report from GitHub", fileName, downloadLink, "RULEAPP REPORT - ", channel);
                                         }
                                         catch (Exception ex)
                                         {
                                             await NotificationHelper.NotifyAsync($"Error uploading report to GitHub: {ex.Message}", "RULEAPP REPORT", "Debug");
+                                        }
+                                        break;
+                                    case IHelper.InRuleEventHelperType.AzureGit:
+                                        try
+                                        {
+                                            var downloadLink = await AzureGitHelper.Instance.UploadFileToRepo(reportContent, fileName, uploadChannel);
+                                            TeamsHelper.PostMessageWithDownloadButton("Click here to download rule application report from Azure Git", fileName, downloadLink, "RULEAPP REPORT - ", channel);
+                                        }
+                                        catch (Exception ex)
+                                        {
+                                            await NotificationHelper.NotifyAsync($"Error uploading report to Azure Git: {ex.Message}", "RULEAPP REPORT", "Debug");
                                         }
                                         break;
                                 }
@@ -85,12 +96,23 @@ namespace InRule.DevOps.Helpers
                                     case IHelper.InRuleEventHelperType.GitHub:
                                         try
                                         {
-                                            var downloadGitHubLink = await GitHubHelper.UploadFileToRepo(reportContent, fileName, uploadChannel);
-                                            SlackHelper.PostMessageWithDownloadButton("Click here to download rule application report from GitHub", fileName, downloadGitHubLink, "RULEAPP REPORT - ", channel);
+                                            var downloadLink = await GitHubHelper.Instance.UploadFileToRepo(reportContent, fileName, uploadChannel);
+                                            SlackHelper.PostMessageWithDownloadButton("Click here to download rule application report from GitHub", fileName, downloadLink, "RULEAPP REPORT - ", channel);
                                         }
                                         catch (Exception ex)
                                         {
                                             await NotificationHelper.NotifyAsync($"Error uploading report to GitHub: {ex.Message}", "RULEAPP REPORT", "Debug");
+                                        }
+                                        break;
+                                    case IHelper.InRuleEventHelperType.AzureGit:
+                                        try
+                                        {
+                                            var downloadLink = await AzureGitHelper.Instance.UploadFileToRepo(reportContent, fileName, uploadChannel);
+                                            SlackHelper.PostMessageWithDownloadButton("Click here to download rule application report from Azure Git", fileName, downloadLink, "RULEAPP REPORT - ", channel);
+                                        }
+                                        catch (Exception ex)
+                                        {
+                                            await NotificationHelper.NotifyAsync($"Error uploading report to Azure Git: {ex.Message}", "RULEAPP REPORT", "Debug");
                                         }
                                         break;
                                 }
@@ -158,12 +180,23 @@ namespace InRule.DevOps.Helpers
                                     case IHelper.InRuleEventHelperType.GitHub:
                                         try
                                         {
-                                            var downloadGitHubLink = await GitHubHelper.UploadFileToRepo(reportContent, fileName, uploadChannel);
-                                            TeamsHelper.PostMessageWithDownloadButton("Click here to download rule application difference report from GitHub", fileName, downloadGitHubLink, "RULEAPP DIFF REPORT - ", channel);
+                                            var downloadLink = await GitHubHelper.Instance.UploadFileToRepo(reportContent, fileName, uploadChannel);
+                                            TeamsHelper.PostMessageWithDownloadButton("Click here to download rule application difference report from GitHub", fileName, downloadLink, "RULEAPP DIFF REPORT - ", channel);
                                         }
                                         catch (Exception ex)
                                         {
                                             await NotificationHelper.NotifyAsync($"Error uploading difference report to GitHub: {ex.Message}", "RULEAPP REPORT", "Debug");
+                                        }
+                                        break;
+                                    case IHelper.InRuleEventHelperType.AzureGit:
+                                        try
+                                        {
+                                            var downloadLink = await AzureGitHelper.Instance.UploadFileToRepo(reportContent, fileName, uploadChannel);
+                                            TeamsHelper.PostMessageWithDownloadButton("Click here to download rule application difference report from Azure Git", fileName, downloadLink, "RULEAPP DIFF REPORT - ", channel);
+                                        }
+                                        catch (Exception ex)
+                                        {
+                                            await NotificationHelper.NotifyAsync($"Error uploading difference report to Azure Git: {ex.Message}", "RULEAPP REPORT", "Debug");
                                         }
                                         break;
                                 }
@@ -188,12 +221,23 @@ namespace InRule.DevOps.Helpers
                                     case IHelper.InRuleEventHelperType.GitHub:
                                         try
                                         {
-                                            var downloadGitHubLink = await GitHubHelper.UploadFileToRepo(reportContent, fileName, uploadChannel);
-                                            SlackHelper.PostMessageWithDownloadButton("Click here to download rule application difference report from GitHub", fileName, downloadGitHubLink, "RULEAPP DIFF REPORT - ", channel);
+                                            var downloadLink = await GitHubHelper.Instance.UploadFileToRepo(reportContent, fileName, uploadChannel);
+                                            SlackHelper.PostMessageWithDownloadButton("Click here to download rule application difference report from GitHub", fileName, downloadLink, "RULEAPP DIFF REPORT - ", channel);
                                         }
                                         catch (Exception ex)
                                         {
                                             await NotificationHelper.NotifyAsync($"Error uploading difference report to GitHub: {ex.Message}", "RULEAPP REPORT", "Debug");
+                                        }
+                                        break;
+                                    case IHelper.InRuleEventHelperType.AzureGit:
+                                        try
+                                        {
+                                            var downloadLink = await AzureGitHelper.Instance.UploadFileToRepo(reportContent, fileName, uploadChannel);
+                                            SlackHelper.PostMessageWithDownloadButton("Click here to download rule application difference report from Azure Git", fileName, downloadLink, "RULEAPP DIFF REPORT - ", channel);
+                                        }
+                                        catch (Exception ex)
+                                        {
+                                            await NotificationHelper.NotifyAsync($"Error uploading difference report to Azure Git: {ex.Message}", "RULEAPP REPORT", "Debug");
                                         }
                                         break;
                                 }

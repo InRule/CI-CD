@@ -1,4 +1,5 @@
-﻿using InRule.Repository;
+﻿using InRule.DevOps.Helpers.Models;
+using InRule.Repository;
 using InRule.Repository.Regression;
 using InRule.Runtime.Testing.Regression;
 using InRule.Runtime.Testing.Regression.Runtime;
@@ -15,12 +16,12 @@ namespace InRule.DevOps.Helpers
         private static readonly string moniker = "TestSuite";
         static readonly bool IsCloudBased = bool.Parse(SettingsManager.Get("IsCloudBased"));
 
-        public static string RunInRuleTests(RuleApplicationDef ruleAppDef, bool htmlResults)
+        public static string RunInRuleTests(RuleApplicationDef ruleAppDef, IFileRepository repo, bool htmlResults)
         {
-            return RunInRuleTestsAsync(ruleAppDef, htmlResults, moniker).Result;
+            return RunInRuleTestsAsync(ruleAppDef, repo, htmlResults, moniker).Result;
         }
 
-        public static async Task<string> RunInRuleTestsAsync(RuleApplicationDef ruleAppDef, bool htmlResults, string moniker)
+        public static async Task<string> RunInRuleTestsAsync(RuleApplicationDef ruleAppDef, IFileRepository repo, bool htmlResults, string moniker)
         {
             string TestSuitesPath = SettingsManager.Get($"{moniker}.TestSuitesPath");
             string SaveResultsPath = SettingsManager.Get($"{moniker}.TestSuitesResultsPath");
@@ -108,7 +109,8 @@ namespace InRule.DevOps.Helpers
                                     results.SaveAs(fileFullName);
 
                                     MemoryStream mem = new MemoryStream(File.ReadAllBytes(fileFullName));
-                                    var downloadLink = GitHubHelper.UploadFileToRepo(mem, fileName, UploadTo).Result;
+                                    var downloadLink = repo.UploadFileToRepo(mem, fileName, UploadTo).Result;
+
                                     mem.Dispose();
                                     foreach (var channel in channels)
                                     {
@@ -173,18 +175,21 @@ namespace InRule.DevOps.Helpers
         public static async Task RunRegressionTestsAsync(string eventType, object data, RuleApplicationDef ruleappDef, string moniker)
         {
             string NotificationChannel = SettingsManager.Get($"{moniker}.NotificationChannel");
-            string TestSuiteGitHub = SettingsManager.Get($"{moniker}.TestSuiteGitHub");
+            string TestSuiteRepoMoniker = SettingsManager.Get($"{moniker}.TestSuiteGitHub");
             try
             {
                 var channels = NotificationChannel.Split(' ');
                 await NotificationHelper.NotifyAsync("Running unit tests in available test suites...", "REGRESSION TESTING", "Debug");
 
-                var task = GitHubHelper.DownloadFilesFromRepo("testsuite", TestSuiteGitHub);
+                // TODO: Does this need to support a config to run against to Azure Git?  We'd need to replace TestSuiteGitHub with TestSuiteRepoMoniker and TestSuiteRepoType
+                IFileRepository repo = GitHubHelper.Instance;
+
+                var task = repo.DownloadFilesFromRepo("testsuite", TestSuiteRepoMoniker);
                 task.Wait();
 
                 //MD ToDo: Fix so it does not run the tests twice
-                var testResultsSlack = RunInRuleTestsAsync(ruleappDef, false, moniker).Result;
-                var testResultsEmail = RunInRuleTestsAsync(ruleappDef, true, moniker).Result;
+                var testResultsSlack = RunInRuleTestsAsync(ruleappDef, repo, false, moniker).Result;
+                var testResultsEmail = RunInRuleTestsAsync(ruleappDef, repo, true, moniker).Result;
 
                 foreach (var channel in channels)
                 {
@@ -216,19 +221,22 @@ namespace InRule.DevOps.Helpers
         public static async Task RunRegressionTestsAsync(RuleApplicationDef ruleappDef, string moniker)
         {
             string NotificationChannel = SettingsManager.Get($"{moniker}.NotificationChannel");
-            string TestSuiteGitHub = SettingsManager.Get($"{moniker}.TestSuiteGitHub");
+            string TestSuiteRepoMoniker = SettingsManager.Get($"{moniker}.TestSuiteGitHub");
 
             try
             {
                 var channels = NotificationChannel.Split(' ');
                 await NotificationHelper.NotifyAsync("*Running unit tests in available test suites...*", "REGRESSION TESTING", "Debug");
 
-                var task = GitHubHelper.DownloadFilesFromRepo("testsuite", TestSuiteGitHub);
+                // TODO: Does this need to support a config to run against to Azure Git?  We'd need to replace TestSuiteGitHub with TestSuiteRepoMoniker and TestSuiteRepoType
+                IFileRepository repo = GitHubHelper.Instance;
+
+                var task = repo.DownloadFilesFromRepo("testsuite", TestSuiteRepoMoniker);
                 task.Wait();
 
                 //MD ToDo: Fix so it does not run the tests twice
-                var testResultsSlack = RunInRuleTestsAsync(ruleappDef, false, moniker).Result;
-                var testResultsEmail = RunInRuleTestsAsync(ruleappDef, true, moniker).Result;
+                var testResultsSlack = RunInRuleTestsAsync(ruleappDef, repo, false, moniker).Result;
+                var testResultsEmail = RunInRuleTestsAsync(ruleappDef, repo, true, moniker).Result;
 
                 foreach (var channel in channels)
                 {

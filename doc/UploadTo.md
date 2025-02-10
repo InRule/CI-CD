@@ -1,8 +1,8 @@
 ### Configuring UploadTo Options - GitHub and Box.com
 
-Some of the DevOps actions either require or have the option to upload files to a location accessible over the Internet. The choices we offer for now are GitHub and Box.com. This page is a guide for how to configure each.
+Some of the DevOps actions either require or have the option to upload files to a location accessible over the Internet. The choices we offer for now are GitHub, Azure Git, and Box.com. This page is a guide for how to configure each.
 
-Once the configuration for GitHub and/or Box.com exists, it can be referenced from UploadTo entries of sections that generate files. For example, this configuration parameter triggers the upload of the generated Java JAR file to both the GitHub and Box.com locations, using the specifications in their corresponding configuration sections:  
+Once the configuration for GitHub, Azure Git, and/or Box.com exists, it can be referenced from UploadTo entries of sections that generate files. For example, this configuration parameter triggers the upload of the generated Java JAR file to both the GitHub and Box.com locations, using the specifications in their corresponding configuration sections:  
 
   <add key="Java.UploadTo" value="GitHub Box"/>
 
@@ -22,6 +22,18 @@ This is a [sample configuration](../config/InRuleDevOps_GitHub.config) with the 
   <add key="GitHub.GitHubProductName" value="MyApplication"/>
   <add key="GitHub.GitHubProductVersion" value="1"/>
   <add key="GitHub.GitHubToken" value="ghp_xxxxxxxxxxxxxxxxxxxxxxxxx"/>
+````
+
+The following sample configuration would apply for an Azure Git connection
+````
+    <add key="AzureDevOpsGit.Type" value="AzureGit"/>
+    <add key="AzureDevOpsGit.Token" value="xxxxxxxxxxxxxxxxxxxxxx"/>
+    <add key="AzureDevOpsGit.Organization" value="InRuleDevOps"/>
+    <add key="AzureDevOpsGit.Project" value="ROAD"/>
+    <add key="AzureDevOpsGit.Repository" value="DevOpsTestRepo"/>
+    <add key="AzureDevOpsGit.BranchPrefixFolder" value="inrule-devops"/>
+    <add key="AzureDevOpsGit.Folder" value="DevOpsRuleApps"/>
+    <add key="AzureDevOpsGit.TestSuitesPath" value="TestSuites"/>
 ````
 
 We will use this GitHub location as example for extracting the values below:  https://github.com/InRule/ProjectDevOps/tree/main/Tests

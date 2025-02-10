@@ -20,6 +20,7 @@
             EventLog,
             ApprovalFlow,
             GitHub,
+            AzureGit,
             Box,
             BariumLiveApproval
         }
